@@ -1,53 +1,86 @@
 extern crate cpu_monitor;
+extern crate serde;
+extern crate serde_derive;
 extern crate serialport;
+extern crate toml;
 
 use std::io::Write;
 use std::time::Duration;
-use std::process::Command;
 
 use cpu_monitor::CpuInstant;
+use serde_derive::{Serialize, Deserialize};
 use sysinfo::{NetworkExt, System, SystemExt};
 
-pub fn get_color(percent: f64) -> char {
-    let mut color: char = 'g';
-    if percent > 0.70 && percent < 0.89 {
-        color = 'y';
-    } else if percent > 0.90 {
-        color = 'r';
-    }
-    return color;
+pub mod util;
+
+use util::*;
+
+#[derive(Serialize, Deserialize)]
+pub struct Config {
+    serial_port: String,
+    hostname_kernel: bool,
+    uptime: bool,
+    cpu_utilization: bool,
+    memory_utilization: bool,
+    network_utilization: NetUtil,
+    storage_utilization: StorageUtil
 }
 
-pub fn get_partition_usage(partition_path: String) -> f64 {
-    let df_raw = Command::new("df")
-        .arg(partition_path)
-        .arg("--no-sync")
-        .arg("--output=pcent")
-        .output()
-        .expect("failed to execute df process");
-    let df_string = String::from_utf8(df_raw.stdout).unwrap();
-    let df_split: Vec<&str> = df_string.split('\n').collect();
-    let mut percent: String;
-    if df_split.len() > 1 {
-        percent = String::from(df_split[1]).replace('%', "");
-        percent = String::from(percent.trim());
-        if percent.len() == 1 {
-            percent.insert(0, '0');
-        }
-    } else {
-        percent = String::from("00");
-    }
-        percent.insert(percent.len() - 2, '.');
-    if percent.starts_with('.') {
-        percent.insert(0, '0');
-    }
-    return f64::trunc((match percent.parse::<f64>() {
-        Ok(o) => o,
-        Err(_) => 0.0
-    }) * 100.0) / 100.0;
+#[derive(Serialize, Deserialize)]
+pub struct NetUtil {
+    enabled: bool,
+    network: Option<Vec<NetConf>>
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct NetConf {
+    interface_name: String,
+    top_speed_mbps: u64
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct StorageUtil {
+    enabled: bool,
+    partition: Option<Vec<PartConf>>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PartConf {
+    partition_name: String,
+    partition_path: String,
 }
 
 fn main() {
+    let default_config: Config = Config{
+        serial_port: "/dev/ttyUSB0".to_string(),
+        hostname_kernel: true,
+        uptime: true,
+        cpu_utilization: true,
+        memory_utilization: true,
+        network_utilization: NetUtil {
+            enabled: true,
+            network: Some(vec!(
+                NetConf{
+                    interface_name: "eno1".to_string(),
+                    top_speed_mbps: 1000000000
+                }
+            ))
+        },
+        storage_utilization: StorageUtil{
+            enabled: true,
+            partition: Some(vec!(
+                PartConf {
+                    partition_name: "Internal RAID".to_string(),
+                    partition_path: "/dev/sdz".to_string()
+                },
+                PartConf {
+                    partition_name: "External RAID".to_string(),
+                    partition_path: "/dev/sdb".to_string()
+                }
+            ))
+        }
+    };
+    println!("{}", toml::to_string(&default_config).unwrap());
     let ports = serialport::available_ports().expect("No ports found!");
     for p in ports {
         println!("{}", p.port_name);
@@ -71,13 +104,13 @@ fn main() {
     loop {
         sys.refresh_all();
         std::thread::sleep(Duration::from_millis(100));
-        port.write("c\n".as_bytes()).expect("failed to clear screen");
+        clear(&mut port);
         std::thread::sleep(Duration::from_millis(100));
         port.write(format!("t g {} {}\n", sys.host_name().unwrap_or("".to_string()), sys.kernel_version().unwrap_or("".to_string())).as_bytes()).unwrap();
         std::thread::sleep(Duration::from_secs(10));
-        port.write("c\n".as_bytes()).expect("failed to clear screen");
+        clear(&mut port);
         let mut time: u64 = 0;
-        port.write("c\n".as_bytes()).expect("failed to clear screen");
+        clear(&mut port);
         std::thread::sleep(Duration::from_millis(100));
         while time < 10 {
             let uptime = sys.uptime();
@@ -91,7 +124,7 @@ fn main() {
             std::thread::sleep(Duration::from_secs(1));
             time = time + 1;
         }
-        port.write("c\n".as_bytes()).expect("failed to clear screen");
+        clear(&mut port);
         std::thread::sleep(Duration::from_millis(100));
         port.write("t g CPU Usage\n".as_bytes()).unwrap();
         time = 0;
@@ -107,7 +140,7 @@ fn main() {
             time = time + 1;
         }
         time = 0;
-        port.write("c\n".as_bytes()).expect("failed to clear screen");
+        clear(&mut port);
         std::thread::sleep(Duration::from_millis(100));
         while time < 20 {
             sys.refresh_memory();
@@ -149,14 +182,14 @@ fn main() {
             time = time + 1;
         }
         std::thread::sleep(Duration::from_millis(100));
-        port.write("c\n".as_bytes()).expect("failed to clear screen");
+        clear(&mut port);
         std::thread::sleep(Duration::from_millis(100));
         let part_one = get_partition_usage(String::from("/dev/sdz"));
         port.write(format!("p {} {}\n", get_color(part_one), part_one).as_bytes()).unwrap();
         std::thread::sleep(Duration::from_millis(100));
         port.write(format!("t {} Internal RAID\n", get_color(part_one)).as_bytes()).unwrap();
         std::thread::sleep(Duration::from_secs(10));
-        port.write("c\n".as_bytes()).expect("failed to clear screen");
+        clear(&mut port);
         std::thread::sleep(Duration::from_millis(100));
         let part_two = get_partition_usage(String::from("/dev/sdb"));
         port.write(format!("p {} {}\n", get_color(part_two), part_two).as_bytes()).unwrap();

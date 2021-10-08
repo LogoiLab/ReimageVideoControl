@@ -1,0 +1,23 @@
+serial_port = "/dev/ttyUSB0"
+hostname_kernel = true
+uptime = true
+cpu_utilization = true
+memory_utilization = true
+
+[network_utilization]
+enabled = true
+
+[[network_utilization.network]]
+interface_name = "eno1"
+top_speed_mbps = 1000000000
+
+[storage_utilization]
+enabled = true
+
+[[storage_utilization.partition]]
+partition_name = "Internal RAID"
+partition_path = "/dev/sdz"
+
+[[storage_utilization.partition]]
+partition_name = "External RAID"
+partition_path = "/dev/sdb"
