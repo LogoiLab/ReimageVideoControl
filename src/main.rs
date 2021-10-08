@@ -18,11 +18,12 @@ use modes::*;
 
 fn main() {
     let incoming_config = Config::parse_from_file("./rivctrl_conf.toml");
-    println!("{}", toml::to_string(&incoming_config).unwrap());
     let ports = serialport::available_ports().expect("No ports found!");
+    print!("Available serial ports:");
     for p in ports {
-        println!("{}", p.port_name);
+        print!(" {}", p.port_name);
     }
+    println!("\nUsing: {}", incoming_config.serial_port);
 
     let port_settings = serialport::SerialPortSettings {
         baud_rate: 14400,
