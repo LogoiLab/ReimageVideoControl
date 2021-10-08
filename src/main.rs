@@ -8,79 +8,17 @@ use std::io::Write;
 use std::time::Duration;
 
 use cpu_monitor::CpuInstant;
-use serde_derive::{Serialize, Deserialize};
 use sysinfo::{NetworkExt, System, SystemExt};
 
 pub mod util;
+pub mod config;
 
 use util::*;
-
-#[derive(Serialize, Deserialize)]
-pub struct Config {
-    serial_port: String,
-    hostname_kernel: bool,
-    uptime: bool,
-    cpu_utilization: bool,
-    memory_utilization: bool,
-    network_utilization: NetUtil,
-    storage_utilization: StorageUtil
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct NetUtil {
-    enabled: bool,
-    network: Option<Vec<NetConf>>
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct NetConf {
-    interface_name: String,
-    top_speed_mbps: u64
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct StorageUtil {
-    enabled: bool,
-    partition: Option<Vec<PartConf>>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct PartConf {
-    partition_name: String,
-    partition_path: String,
-}
+use config::*;
 
 fn main() {
-    let default_config: Config = Config{
-        serial_port: "/dev/ttyUSB0".to_string(),
-        hostname_kernel: true,
-        uptime: true,
-        cpu_utilization: true,
-        memory_utilization: true,
-        network_utilization: NetUtil {
-            enabled: true,
-            network: Some(vec!(
-                NetConf{
-                    interface_name: "eno1".to_string(),
-                    top_speed_mbps: 1000000000
-                }
-            ))
-        },
-        storage_utilization: StorageUtil{
-            enabled: true,
-            partition: Some(vec!(
-                PartConf {
-                    partition_name: "Internal RAID".to_string(),
-                    partition_path: "/dev/sdz".to_string()
-                },
-                PartConf {
-                    partition_name: "External RAID".to_string(),
-                    partition_path: "/dev/sdb".to_string()
-                }
-            ))
-        }
-    };
-    println!("{}", toml::to_string(&default_config).unwrap());
+    let config = Config::parse_from_file("./rivctrl_conf.toml");
+    println!("{}", toml::to_string(&config).unwrap());
     let ports = serialport::available_ports().expect("No ports found!");
     for p in ports {
         println!("{}", p.port_name);
