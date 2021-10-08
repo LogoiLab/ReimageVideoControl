@@ -1,0 +1,10 @@
+[Unit]
+Description=ReImageVideo Controller Daemon
+
+[Service]
+ExecStart=/bin/rivctrl
+WorkingDirectory=/etc/
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

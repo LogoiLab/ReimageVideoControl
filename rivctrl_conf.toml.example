@@ -7,17 +7,21 @@ memory_utilization = true
 [network_utilization]
 enabled = true
 
-[[network_utilization.network]]
-interface_name = "eno1"
-top_speed_mbps = 1000000000
+        [[network_utilization.network]]
+        interface_name = "eno1"
+        top_speed_bps = 1000000000
+
+        [[network_utilization.network]]
+        interface_name = "eno2"
+        top_speed_bps = 1000000000
 
 [storage_utilization]
 enabled = true
 
-[[storage_utilization.partition]]
-partition_name = "Internal RAID"
-partition_path = "/dev/sdz"
+        [[storage_utilization.partition]]
+        partition_name = "Primary Drive"
+        partition_path = "/dev/sda"
 
-[[storage_utilization.partition]]
-partition_name = "External RAID"
-partition_path = "/dev/sdb"
+        [[storage_utilization.partition]]
+        partition_name = "Secondary Drive"
+        partition_path = "/dev/sdb"
