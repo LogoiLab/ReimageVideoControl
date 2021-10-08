@@ -1,5 +1,5 @@
 [Unit]
-Description=ReImageVideo Controller Daemon
+Description=ReimageVideo Controller Daemon
 
 [Service]
 ExecStart=/bin/rivctrl
