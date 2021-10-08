@@ -32,10 +32,10 @@ fn main() {
         stop_bits: serialport::StopBits::One,
         timeout: Duration::new(65535, 0)
     };
-    let mut port = match serialport::open_with_settings("/dev/ttyUSB0", &port_settings) {
+    let mut port = match serialport::open_with_settings(incoming_config.serial_port.as_str(), &port_settings) {
         Ok(o) => o,
         Err(_) => {
-            eprintln!("Failed to connect to serial port: /dev/ttyUSB0");
+            eprintln!("Failed to connect to serial port: {}", incoming_config.serial_port);
             std::process::exit(1);
         }
     };
