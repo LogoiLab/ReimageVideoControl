@@ -1,6 +1,6 @@
 # ReimageVideo Controller Application
 
-This is the controller application for the [ReimageVideo](https://github.com/LogoiLab/ReImageVideo) project.
+This is the controller application for the [ReimageVideo](https://github.com/LogoiLab/ReimageVideo) project.
 
 This controller application is meant to be run as a daemon. It expects the `rivctrl_conf.toml` configuration file to be in its working directory. An example configuration file `rivctrl_conf.toml.example` is provided.
 
